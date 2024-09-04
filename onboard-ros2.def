@@ -1,0 +1,38 @@
+BootStrap: debootstrap
+OSVersion: jammy
+MirrorURL: http://mirror.yandex.ru/ubuntu
+
+%post
+  cat << EOF >/etc/apt/sources.list
+deb http://mirror.yandex.ru/ubuntu jammy main restricted universe multiverse
+deb http://mirror.yandex.ru/ubuntu jammy-updates main restricted universe multiverse
+deb http://mirror.yandex.ru/ubuntu jammy-security main restricted universe multiverse
+EOF
+
+  cat << EOF >/etc/apt/apt.conf
+APT::Install-Recommends "false";
+APT::Install-Suggests "false";
+EOF
+
+  export DEBIAN_FRONTEND=noninteractive
+
+  apt-get update
+  apt-get -y upgrade
+  apt-get install -y tzdata ca-certificates curl lsb-release locales wget gnupg gettext-base
+
+  # ROS2
+  locale-gen en_US en_US.UTF-8 ru_RU.UTF-8
+  update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+  export LANG=en_US.UTF-8
+
+  curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://mirror.yandex.ru/mirrors/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" > /etc/apt/sources.list.d/ros2.list
+
+  apt-get update
+  apt-get install -y ros-humble-ros-base ros-humble-mavros bzip2 python3-pip ros-humble-cv-bridge
+
+  /opt/ros/humble/lib/mavros/install_geographiclib_datasets.sh
+
+  pip3 install numpy==1.26.4 opencv-python==4.10.0.84 scipy==1.14.0
+
+  apt-get clean
